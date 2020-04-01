@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hello Gridea | Gridea</title>
-<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1585616078819">
+<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1585703850814">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://whatswater.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Hello Gridea | Gridea - Atom Feed" href="https://whatswater.github.io/atom.xml">
@@ -28,7 +28,7 @@ Gridea 主页
       <div class="main-content">
         <div class="site-header">
   <a href="https://whatswater.github.io">
-  <img class="avatar" src="https://whatswater.github.io/images/avatar.png?v=1585616078819" alt="">
+  <img class="avatar" src="https://whatswater.github.io/images/avatar.png?v=1585703850814" alt="">
   </a>
   <h1 class="site-title">
     Gridea
@@ -121,7 +121,24 @@ Gridea 主页
 <p>🌱 当然 <strong>Gridea</strong> 还很年轻，有很多不足，但请相信，它会不停向前 🏃</p>
 <p>未来，它一定会成为你离不开的伙伴</p>
 <p>尽情发挥你的才华吧！</p>
-<p>😘 Enjoy~</p>
+<pre><code class="language-java">    private Node enq(final Node node) {
+        for (;;) {
+            Node t = tail;
+            if (t == null) { // Must initialize
+                if (compareAndSetHead(new Node()))
+                    tail = head;
+            } else {
+                node.prev = t;
+                if (compareAndSetTail(t, node)) {
+                    t.next = node;
+                    return t;
+                }
+            }
+        }
+    }
+</code></pre>
+<p>先使用CAS操作HEAD，多线程同时操作时，只有一个能成功，所以<code>tail = head;</code>操作是单线程执行。<code>tail = head;</code>刚好影响了<code>t == null</code>的判断（tail属性有volatile修饰符），所以不会有其他线程在<code>compareAndSetHead(new Node())</code>刚执行完<code>tail = head;</code>未执行时进入<code>t != null</code>的分支，在<code>t == null</code>的分支执行<code>compareAndSetHead(new Node())</code>必然失败，然后继续循环。<br>
+😘 Enjoy~</p>
 
               </div>
               <div class="toc-container">
