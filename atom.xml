@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://whatswater.github.io</id>
     <title>技术笔记</title>
-    <updated>2020-04-01T14:19:57.504Z</updated>
+    <updated>2020-04-01T14:20:52.966Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://whatswater.github.io"/>
     <link rel="self" href="https://whatswater.github.io/atom.xml"/>
@@ -15,7 +15,7 @@
         <id>https://whatswater.github.io/post/hello-gridea/</id>
         <link href="https://whatswater.github.io/post/hello-gridea/">
         </link>
-        <updated>2018-12-11T16:00:00.000Z</updated>
+        <updated>2020-04-01T14:20:33.000Z</updated>
         <content type="html"><![CDATA[<p>##前言<br>
 我在编程的过程中，碰到不懂的地方，总是喜欢在网络上搜索答案，先解决问题再说。碰到的次数多了，总这么做心里就隐隐有些不爽：每次都要从网络上筛选大量的信息，不确定选择的解决办法是不是最优的，于是到处看来看去，管中窥豹，期望能够对这个地方稍有了解。几日不见这种问题，多日之后再碰到，又要再搜索。究其原因，则是在解决问题时偷懒，不去思考问题，同时也没有记录笔记。于是乎便有了这个博客，一是作为笔记帮我快速的查找；二是把某个领域的知识体系融入到我现有的体系中。<br>
 ##并发编程系列目标<br>
