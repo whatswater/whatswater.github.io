@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://whatswater.github.io</id>
     <title>技术笔记</title>
-    <updated>2020-04-04T08:58:33.932Z</updated>
+    <updated>2020-04-05T14:05:08.075Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://whatswater.github.io"/>
     <link rel="self" href="https://whatswater.github.io/atom.xml"/>
@@ -10,6 +10,53 @@
     <logo>https://whatswater.github.io/images/avatar.png</logo>
     <icon>https://whatswater.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, 技术笔记</rights>
+    <entry>
+        <title type="html"><![CDATA[JAVA并发编程系列（4）- 线程安全]]></title>
+        <id>https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-4-xian-cheng-an-quan-ji-bie/</id>
+        <link href="https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-4-xian-cheng-an-quan-ji-bie/">
+        </link>
+        <updated>2020-04-04T13:51:29.000Z</updated>
+        <content type="html"><![CDATA[<p><strong>线程安全级别</strong><br>
+    线程安全并没有一个准确的定义，到底线程安全是什么，应该提供什么样的保证。为了更加深入地理解线程安全，在这里我们可以不把线程安全当做一个非真即假的二元排他选项来看待，按照线程安全的“安全程度”由强至弱来排序，我们可以将Java语言中各种操作共享的数据分为以下4类：不可变、相对线程安全、线程兼容和线程对立。</p>
+<ul>
+<li>不可变<br>
+对象创建之后就不可变。由于对象本身不可变，所以调用对象的任何方法都不会有线程安全问题。</li>
+<li>相对线程安全<br>
+相对的线程安全就是我们通常意义上所讲的线程安全，它需要保证对这个对象单独的操作是线程安全的，我们在调用的时候不需要做额外的保障措施，但是对于一些特定顺序的连续调用，就可能需要在调用端使用额外的同步手段来保证调用的正确性。</li>
+<li>线程兼容<br>
+线程兼容是指对象本身并不是线程安全的，但是可以通过在调用端正确地使用同步手段来保证对象在并发环境中可以安全地使用，我们平常说一个类不是线程安全的，绝大多数时候指的是这一种情况。</li>
+<li>线程对立<br>
+线程对立是指无论调用端是否采取了同步措施，都无法在多线程环境中并发使用的代码。由于Java语言天生就具备多线程特性，线程对立这种排斥多线程的代码是很少出现的，而且通常都是有害的，应当尽量避免。<br>
+一个线程对立的例子是Thread类的suspend()和resume()方法，如果有两个线程同时持有一个线程对象，一个尝试去中断线程，另一个尝试去恢复线程，如果并发进行的话，无论调用时是否进行了同步，目标线程都是存在死锁风险的，如果suspend()中断的线程就是即将要执行resume()的那个线程，那就肯定要产生死锁了。也正是由于这个原因，suspend()和resume()方法已经被JDK声明废弃（@Deprecated）了。常见的线程对立的操作还有System.setIn()、Sytem.setOut()和System.runFinalizersOn-Exit()等。线程对立的代码，只能在一个线程中执行。</li>
+</ul>
+<p><strong>隔离级别</strong><br>
+    线程安全并不意味着在这个对象上的操作可以看成是串行的。对这个对象的单个操作可能会改动对象内部多个状态，直到关键的一个状态修改后，这个操作才生效。这样可能导致调用顺序和实际生效的顺序不一致。当一个线程执行一个修改操作，然后另外一个线程执行一个读取操作，但是修改操作还未完成，读取操作已经执行完毕，读取操作读到了未修改之前的状态。实际上是先执行了读取操作，后执行修改操作。两个并行的修改操作也可能会产生这种问题。<br>
+    对象内部也可能存在一些冗余状态，为了提高并发时性能，这些冗余状态的更新和主要状态的更新没必要做成原子性的操作。举一个简单的例子，一个单链表中存储了链表的大小，执行添加操作时，分成两个原子性的操作：将元素添加到链表中；自增链表的大小。另外一个线程读取的时候，可能元素已经添加到链表中，但是链表大小还没变化。但是对象提供了遍历和获取大小的API，这两个API看到的状态就不一样。<br>
+<img src="https://whatswater.github.io/post-images/1586095496177.jpg" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[JAVA并发编程系列（3）- 先行发生原则]]></title>
+        <id>https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-3/</id>
+        <link href="https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-3/">
+        </link>
+        <updated>2020-04-04T13:12:20.000Z</updated>
+        <content type="html"><![CDATA[<p>    JAVA内存模型描述非常的难懂，一般使用等价的先行发生原则来判断线程安全。先行发生时java内存模型中定义的两项操作之间的偏序关系，如果说操作A先行发生于操作B，其实就是说在发生操作B之间，操作A产生的影响能被操作B观察到，“影响”包括修改了内存中共享变量的值、发送了消息、调用了方法等。<br>
+    JAVA内存模型中存在着一些“天然的”先行发生关系。。如果两个操作之间的关系不在此列，并且无法从下列规则推导出来的话，它们就没有顺序性保障，虚拟机可以对它们随意地进行重排序。</p>
+<ul>
+<li>程序次序规则（Program Order Rule）：在一个线程内，按照程序代码顺序，书写在前面的操作先行发生于书写在后面的操作。准确地说，应该是控制流顺序而不是程序代码顺序，因为要考虑分支、循环等结构。</li>
+<li>管程锁定规则（Monitor Lock Rule）：一个unlock操作先行发生于后面对同一个锁的lock操作。这里必须强调的是同一个锁，而“后面”是指时间上的先后顺序。</li>
+<li>volatile变量规则（Volatile Variable Rule）：对一个volatile变量的写操作先行发生于后面对这个变量的读操作，这里的“后面”同样是指时间上的先后顺序。</li>
+<li>线程启动规则（Thread Start Rule）：Thread对象的start()方法先行发生于此线程的每一个动作。</li>
+<li>线程终止规则（Thread Termination Rule）：线程中的所有操作都先行发生于对此线程的终止检测，我们可以通过Thread.join()方法结束、Thread.isAlive()的返回值等手段检测到线程已经终止执行。</li>
+<li>线程中断规则（Thread Interruption Rule）：对线程interrupt()方法的调用先行发生于被中断线程的代码检测到中断事件的发生，可以通过Thread.interrupted()方法检测到是否有中断发生。</li>
+<li>对象终结规则（Finalizer Rule）：一个对象的初始化完成（构造函数执行结束）先行发生于它的finalize()方法的开始。</li>
+<li>传递性（Transitivity）：如果操作A先行发生于操作B，操作B先行发生于操作C，那就可以得出操作A先行发生于操作C的结论。</li>
+</ul>
+<p>    先行发生不一定是时间上的先行发生，而是逻辑上的先行发生。对于管程锁定规则和volatile变量规则来讲（多个线程的竞争操作），逻辑上的先行发生就是时间上的先行发生。<br>
+    先行发生原则中比较常见的是“管程锁定规则”和“volatile变量规则”，“管程锁定规则”可以简单的理解为加锁和解锁是串行的；“volatile变量规则”可以简单理解为volatile变量的写入和读取之间是串行的，写入和写入之间是串行的，读取和读取之间是并行的（PS：很像读写锁）。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[JAVA并发编程系列（2）- JAVA内存模型]]></title>
         <id>https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-2-java-nei-cun-mo-xing/</id>

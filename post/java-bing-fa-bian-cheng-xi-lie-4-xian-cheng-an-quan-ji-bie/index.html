@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>JAVA并发编程系列（4）- 线程安全 | 技术笔记</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1586095504488">
+<link rel="stylesheet" href="https://whatswater.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="线程安全级别
+    线程安全并没有一个准确的定义，到底线程安全是什么，应该提供什么样的保证。为了更加深入地理解线程安全，在这里我们可以不把线程安全当做一个非真即假的二元排他选项来看待，按照线程安全的“安全程度”由强至弱来排序，我们可以将J..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://whatswater.github.io">
+        <img src="https://whatswater.github.io/images/avatar.png?v=1586095504488" class="site-logo">
+        <h1 class="site-title">技术笔记</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      好，很好，非常好
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://whatswater.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">JAVA并发编程系列（4）- 线程安全</h2>
+            <div class="post-date">2020-04-04</div>
+            
+            <div class="post-content" v-pre>
+              <p><strong>线程安全级别</strong><br>
+    线程安全并没有一个准确的定义，到底线程安全是什么，应该提供什么样的保证。为了更加深入地理解线程安全，在这里我们可以不把线程安全当做一个非真即假的二元排他选项来看待，按照线程安全的“安全程度”由强至弱来排序，我们可以将Java语言中各种操作共享的数据分为以下4类：不可变、相对线程安全、线程兼容和线程对立。</p>
+<ul>
+<li>不可变<br>
+对象创建之后就不可变。由于对象本身不可变，所以调用对象的任何方法都不会有线程安全问题。</li>
+<li>相对线程安全<br>
+相对的线程安全就是我们通常意义上所讲的线程安全，它需要保证对这个对象单独的操作是线程安全的，我们在调用的时候不需要做额外的保障措施，但是对于一些特定顺序的连续调用，就可能需要在调用端使用额外的同步手段来保证调用的正确性。</li>
+<li>线程兼容<br>
+线程兼容是指对象本身并不是线程安全的，但是可以通过在调用端正确地使用同步手段来保证对象在并发环境中可以安全地使用，我们平常说一个类不是线程安全的，绝大多数时候指的是这一种情况。</li>
+<li>线程对立<br>
+线程对立是指无论调用端是否采取了同步措施，都无法在多线程环境中并发使用的代码。由于Java语言天生就具备多线程特性，线程对立这种排斥多线程的代码是很少出现的，而且通常都是有害的，应当尽量避免。<br>
+一个线程对立的例子是Thread类的suspend()和resume()方法，如果有两个线程同时持有一个线程对象，一个尝试去中断线程，另一个尝试去恢复线程，如果并发进行的话，无论调用时是否进行了同步，目标线程都是存在死锁风险的，如果suspend()中断的线程就是即将要执行resume()的那个线程，那就肯定要产生死锁了。也正是由于这个原因，suspend()和resume()方法已经被JDK声明废弃（@Deprecated）了。常见的线程对立的操作还有System.setIn()、Sytem.setOut()和System.runFinalizersOn-Exit()等。线程对立的代码，只能在一个线程中执行。</li>
+</ul>
+<p><strong>隔离级别</strong><br>
+    线程安全并不意味着在这个对象上的操作可以看成是串行的。对这个对象的单个操作可能会改动对象内部多个状态，直到关键的一个状态修改后，这个操作才生效。这样可能导致调用顺序和实际生效的顺序不一致。当一个线程执行一个修改操作，然后另外一个线程执行一个读取操作，但是修改操作还未完成，读取操作已经执行完毕，读取操作读到了未修改之前的状态。实际上是先执行了读取操作，后执行修改操作。两个并行的修改操作也可能会产生这种问题。<br>
+    对象内部也可能存在一些冗余状态，为了提高并发时性能，这些冗余状态的更新和主要状态的更新没必要做成原子性的操作。举一个简单的例子，一个单链表中存储了链表的大小，执行添加操作时，分成两个原子性的操作：将元素添加到链表中；自增链表的大小。另外一个线程读取的时候，可能元素已经添加到链表中，但是链表大小还没变化。但是对象提供了遍历和获取大小的API，这两个API看到的状态就不一样。<br>
+<img src="https://whatswater.github.io/post-images/1586095496177.jpg" alt="" loading="lazy"></p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-3/">
+                  <h3 class="post-title">
+                    JAVA并发编程系列（3）- 先行发生原则
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
