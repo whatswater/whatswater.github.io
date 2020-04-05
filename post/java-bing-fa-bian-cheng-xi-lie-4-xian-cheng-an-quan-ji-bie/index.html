@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1586095504488">
+<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1586096964504">
 <link rel="stylesheet" href="https://whatswater.github.io/styles/main.css">
 
 
@@ -29,7 +29,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://whatswater.github.io">
-        <img src="https://whatswater.github.io/images/avatar.png?v=1586095504488" class="site-logo">
+        <img src="https://whatswater.github.io/images/avatar.png?v=1586096964504" class="site-logo">
         <h1 class="site-title">技术笔记</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -109,8 +109,9 @@
 一个线程对立的例子是Thread类的suspend()和resume()方法，如果有两个线程同时持有一个线程对象，一个尝试去中断线程，另一个尝试去恢复线程，如果并发进行的话，无论调用时是否进行了同步，目标线程都是存在死锁风险的，如果suspend()中断的线程就是即将要执行resume()的那个线程，那就肯定要产生死锁了。也正是由于这个原因，suspend()和resume()方法已经被JDK声明废弃（@Deprecated）了。常见的线程对立的操作还有System.setIn()、Sytem.setOut()和System.runFinalizersOn-Exit()等。线程对立的代码，只能在一个线程中执行。</li>
 </ul>
 <p><strong>隔离级别</strong><br>
-    线程安全并不意味着在这个对象上的操作可以看成是串行的。对这个对象的单个操作可能会改动对象内部多个状态，直到关键的一个状态修改后，这个操作才生效。这样可能导致调用顺序和实际生效的顺序不一致。当一个线程执行一个修改操作，然后另外一个线程执行一个读取操作，但是修改操作还未完成，读取操作已经执行完毕，读取操作读到了未修改之前的状态。实际上是先执行了读取操作，后执行修改操作。两个并行的修改操作也可能会产生这种问题。<br>
-    对象内部也可能存在一些冗余状态，为了提高并发时性能，这些冗余状态的更新和主要状态的更新没必要做成原子性的操作。举一个简单的例子，一个单链表中存储了链表的大小，执行添加操作时，分成两个原子性的操作：将元素添加到链表中；自增链表的大小。另外一个线程读取的时候，可能元素已经添加到链表中，但是链表大小还没变化。但是对象提供了遍历和获取大小的API，这两个API看到的状态就不一样。<br>
+    隔离级别是我学习JAVA并发编程时生造的一个概念，借鉴自数据库的隔离级别概念。在JAVA并发编程中，隔离级别指的是对一个对象的并发操作，单个操作的结果什么时候会影响到其他操作，大致可分为以下三种：串行、读已提交、读未提交。串行指的是对对象的操作都可看作是串行的，一个操作执行完毕后再执行另外一个操作；读已提交指的是单个操作执行完毕后，只有在最终提交时才会影响到其他操作，但是多个操作之间的顺序不能保证；读未提交指的是单个操作执行时，中途会多次提交修改，其他操作能够读到中间状态，其他操作需要处理这些中间状态。对线程安全的对象最低要求是多线程并发时内部状态不会被破坏，所以‘读未提交’是可以的。<br>
+    相对线程安全并不意味着其隔离级别就是串行的。对某个对象的单个操作，可能执行较长的时间，直到关键的一个状态修改后，这个操作才会生效。在这个操作执行过程中，后执行的其他操作可能先于这个操作执行完毕，调用顺序和实际生效的顺序不一致。当一个线程执行一个修改操作，然后另外一个线程执行一个读取操作，但是修改操作还未完成，读取操作已经执行完毕，读取操作读到了未修改之前的状态，两个并行的修改操作也可能会存在这种顺序问题。<br>
+    对象内部也可能存在多个状态，为了提高并发时性能，这些状态时并不是原子性的。举一个简单的例子，一个单链表中存储了链表的大小，执行添加操作时，分成两个原子性的操作：将元素添加到链表中；自增链表的大小。另外一个线程读取的时候，可能元素已经添加到链表中，但是链表大小还没变化。对象提供了遍历和获取大小的API，这两个API看到的状态就不一致。<br>
 <img src="https://whatswater.github.io/post-images/1586095496177.jpg" alt="" loading="lazy"></p>
 
             </div>
