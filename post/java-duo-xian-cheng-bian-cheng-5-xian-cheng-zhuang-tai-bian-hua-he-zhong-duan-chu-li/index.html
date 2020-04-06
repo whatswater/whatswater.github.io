@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>JAVA并发编程系列（5）- 线程状态变化和中断处理 | 技术笔记</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1586183356024">
+<link rel="stylesheet" href="https://whatswater.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="线程实现
+    线程实现包括线程实现和线程调度。线程实现分为：1、用户态线程；2、操作系统提供的线程；3、M:N模式，一般JVM使用的是操作系统提供的线程。线程调度方式分为：抢占式和协同式，大部分JVM实现的是抢占式调度。
+线程状态转换
+..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://whatswater.github.io">
+        <img src="https://whatswater.github.io/images/avatar.png?v=1586183356024" class="site-logo">
+        <h1 class="site-title">技术笔记</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      好，很好，非常好
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://whatswater.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">JAVA并发编程系列（5）- 线程状态变化和中断处理</h2>
+            <div class="post-date">2020-04-05</div>
+            
+            <div class="post-content" v-pre>
+              <p><strong>线程实现</strong><br>
+    线程实现包括线程实现和线程调度。线程实现分为：1、用户态线程；2、操作系统提供的线程；3、M:N模式，一般JVM使用的是操作系统提供的线程。线程调度方式分为：抢占式和协同式，大部分JVM实现的是抢占式调度。</p>
+<p><strong>线程状态转换</strong><br>
+JAVA语言定义了5种线程状态，在任意一个时间点，一个线程有且只有其中一个状态，这5个状态分别如下：</p>
+<ol>
+<li>新建（New），创建后尚未启动的线程处于这种状态</li>
+<li>运行（Runnale），Runnable包括了操作系统线程状态中的Running和Ready，也就是处于此状态的线程有可能正在执行，也有可能正在等待着CPU为它分配执行时间。</li>
+<li>无限期等待（Waiting），处于这种状态的线程不会被分配CPU执行时间，他们要等待被其他线程显示地唤醒。以下方法会让线程陷入无限期等待状态：
+<ul>
+<li>没有设置Timeout参数的Object.wait()方法。</li>
+<li>没有设置Timeout参数的Thread.join方法。</li>
+<li>LockSupport.park()方法。</li>
+</ul>
+</li>
+<li>限期等待（Timed waiting），处于这种状态的线程也不会被CPU分配执行时间，不过无须等待被其他线程显示唤醒，在一定时间之后它们会由系统自动唤醒。以下方法会让线程进入限期等待状态：
+<ul>
+<li>Thread.sleep()方法。</li>
+<li>设置了Timeout参数的Object.wait()方法。</li>
+<li>设置了Timeout参数的Thread.join()方法。</li>
+<li>LockSupport.parkNanos()方法。</li>
+<li>LockSupport.parkUntil()方法。</li>
+</ul>
+</li>
+<li>阻塞(Blocked)，线程被阻塞了，“阻塞状态”与“等待状态”的区别是：“阻塞状态”在等待着获取到一个排他锁，这个事件将在另外一个线程放弃这个锁的时候发生；而“等待状态”则是在等待一段时间，或者唤醒动作发生。在程序等待进入同步区域时，线程将进入这种状态。</li>
+<li>结束（Terminated），已终止线程的线程状态，线程已结束执行。</li>
+</ol>
+<p><strong>EntryList、WaitSet</strong><br>
+    针对每个需要加锁的对象，JVM内部维护了两个队列：EntryList和WaitSet。EntryList用于存储正在竞争锁的线程，当这个对象解锁后，其中的一个线程会获取锁；WaitSet用于存储处于等待状态的线程，这些线程在满足唤醒条件的事件发生时（notify、超时等），会转移到EntryList中参与锁的竞争。<br>
+    对于操作系统来讲，线程处于wait状态或者blocked状态都是一样的，都是暂停执行，没啥本质的区别。一个线程调用了同步IO，线程也会被操作系统阻塞起来。这些状态区别就在于恢复执行时候的触发条件不同：处于wait状态的线程需要wait对象执行notify、notifyAll或者wait超时，然后变成blocked状态；处于blocked状态的线程需要获取到锁，才可恢复执行；被IO阻塞的线程需要等待IO事件完成，才可恢复执行。wait状态和blocked状态是JVM管理的（EntryList、WaitSet）而IO阻塞是操作系统管理的。</p>
+<p><strong>线程协作常用方法</strong></p>
+<ul>
+<li>object.wait()，此方法是Object类中的native方法。假定在对象object上调用wait方法，会让当前线程暂时性的释放对object的锁（调用此方法前需要保证当前线程已兢获取到对object的锁）。当前线程会被放入object的WaitSet中。</li>
+<li>object.notify()，此方法是Object类中的native方法，调用此方法会在object的WaitSet中随机选取一个线程，把这个线程转移到EntryList中。</li>
+<li>object.notifyAll()，此方法是Object类中的native方法，调用此方法会讲object的WaitSet中所有线程转移到EntryList中。</li>
+<li>thread.join，实例方法，调用后当前线程会处于wait状态，等待调用的线程之心完毕。</li>
+<li>Thread.sleep，静态方法，使当前线程睡眠一段时间。</li>
+<li>JUC包</li>
+</ul>
+<p><strong>处理中断</strong><br>
+https://zhuanlan.zhihu.com/p/27857336，每种线程状态对中断的响应是什么？什么操作会导致线程中断？</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-4-xian-cheng-an-quan-ji-bie/">
+                  <h3 class="post-title">
+                    JAVA并发编程系列（4）- 线程安全
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
