@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1586183356024">
+<link rel="shortcut icon" href="https://whatswater.github.io/favicon.ico?v=1586231641225">
 <link rel="stylesheet" href="https://whatswater.github.io/styles/main.css">
 
 
@@ -19,9 +19,9 @@
 
 
     <meta name="description" content="线程实现
-    线程实现包括线程实现和线程调度。线程实现分为：1、用户态线程；2、操作系统提供的线程；3、M:N模式，一般JVM使用的是操作系统提供的线程。线程调度方式分为：抢占式和协同式，大部分JVM实现的是抢占式调度。
+    线程实现包括线程实现和线程调度。线程实现分为：1、用户态线程；2、操作系统提供的线程；3、M:N模式，一般JVM使用的是操作系统提供的线程。线程调度方式分为：抢占式和协同式，大部分JVM是抢占式调度。
 线程状态转换
-..." />
+JAV..." />
     <meta name="keywords" content="" />
   </head>
   <body>
@@ -31,7 +31,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://whatswater.github.io">
-        <img src="https://whatswater.github.io/images/avatar.png?v=1586183356024" class="site-logo">
+        <img src="https://whatswater.github.io/images/avatar.png?v=1586231641225" class="site-logo">
         <h1 class="site-title">技术笔记</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -98,7 +98,7 @@
             
             <div class="post-content" v-pre>
               <p><strong>线程实现</strong><br>
-    线程实现包括线程实现和线程调度。线程实现分为：1、用户态线程；2、操作系统提供的线程；3、M:N模式，一般JVM使用的是操作系统提供的线程。线程调度方式分为：抢占式和协同式，大部分JVM实现的是抢占式调度。</p>
+    线程实现包括线程实现和线程调度。线程实现分为：1、用户态线程；2、操作系统提供的线程；3、M:N模式，一般JVM使用的是操作系统提供的线程。线程调度方式分为：抢占式和协同式，大部分JVM是抢占式调度。</p>
 <p><strong>线程状态转换</strong><br>
 JAVA语言定义了5种线程状态，在任意一个时间点，一个线程有且只有其中一个状态，这5个状态分别如下：</p>
 <ol>
@@ -136,7 +136,15 @@ JAVA语言定义了5种线程状态，在任意一个时间点，一个线程有
 <li>JUC包</li>
 </ul>
 <p><strong>处理中断</strong><br>
-https://zhuanlan.zhihu.com/p/27857336，每种线程状态对中断的响应是什么？什么操作会导致线程中断？</p>
+https://zhuanlan.zhihu.com/p/27857336，每种线程状态对中断的响应是什么？什么操作会导致线程中断？<br>
+    线程处于不同状态时，对中断的反应不同。</p>
+<ol>
+<li>Runnable：处于此状态下的线程，中断操作只是会设置线程的中断标志位，没有其他任何作用。运行中的线程需要在代码中主动检测中断标志位。一般情况下不需要这样做，因为线程代码会很快执行完毕。</li>
+<li>WAITING/TIMED_WAITING：处于此状态下的线程，中断操作会使得该线程抛出InterruptedException，需要注意的是，抛出异常后，中断标志位会被清空（线程的中断标志位会由true重置为false，线程为了处理异常已经重新处于就绪状态）。因为处于这个状态的线程，代码不能响应中断，线程也不会很快中止，所以系统抛出InterruptedException做为通知。此处的代码应当搞清楚中断的来源并做相应处理。</li>
+<li>BLOCKED：如果线程在等待锁，中断操作只是会设置线程的中断标志位，线程依然会处于BLOCKED状态。线程中代码并没有在执行，无法响应中断。如果真的需要在等待锁的时候处理中断，可以使用JUC中的lockInterruptibly()。</li>
+<li>NEW/TERMINATE：如果线程尚未启动(NEW)，或者已经结束(TERMINATED)，中断操作对它没有任何效果，中断标志位也不会被设置。</li>
+<li>Java传统IO是不支持中断的，所以如果代码在read/write等操作阻塞的话，是无法被中断的。这就无法和Thead的interrupt模型配合使用了。JavaNIO众多的升级点中就包含了IO操作对中断的支持。InterruptiableChannel表示支持中断的Channel。我们常用的FileChannel，SocketChannel，DatagramChannel都实现了这个接口。实现此InterruptibleChannel接口的通道是可中断的：如果某个线程在可中断通道上因调用某个阻塞的 I/O 操作（常见的操作一般有这些：serverSocketChannel. accept()、socketChannel.connect、socketChannel.open、socketChannel.read、socketChannel.write、fileChannel.read、fileChannel.write）而进入阻塞状态，而另一个线程又调用了该阻塞线程的 interrupt 方法，这将导致该通道被关闭，并且已阻塞线程接将会收到ClosedByInterruptException，并且设置已阻塞线程的中断状态。另外，如果已设置某个线程的中断状态并且它在通道上调用某个阻塞的 I/O 操作，则该通道将关闭并且该线程立即接收到 ClosedByInterruptException；并仍然设置其中断状态。如果线程阻塞于Selector调用，则线程的中断标志位会被设置，同时，阻塞的调用会立即返回。</li>
+</ol>
 
             </div>
             
