@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://whatswater.github.io</id>
     <title>技术笔记</title>
-    <updated>2020-04-07T03:54:04.247Z</updated>
+    <updated>2020-04-08T00:55:41.531Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://whatswater.github.io"/>
     <link rel="self" href="https://whatswater.github.io/atom.xml"/>
@@ -70,7 +70,63 @@
         <link href="https://whatswater.github.io/post/java-bing-fa-bian-cheng-xi-lie-6-cassuo-suo-you-hua/">
         </link>
         <updated>2020-04-05T14:31:29.000Z</updated>
-        <content type="html"><![CDATA[<p>1</p>
+        <content type="html"><![CDATA[<p><strong>锁、锁优化</strong></p>
+<p><strong>CAS</strong><br>
+    CAS是英文单词Compare And Swap的缩写，翻译过来就是比较并替换。CAS机制当中使用了3个基本操作数：内存地址V，旧的预期值A，要修改的新值B。更新一个变量的时候，只有当变量的预期值A和内存地址V当中的实际值相同时，才会将内存地址V对应的值修改为B，修改成功则返回true。CAS整个操作是原子性的，由硬件保证（CPU提供一些特殊的指令）。在JDK 1.5之后，Java程序中才可以使用CAS操作，该操作由sun.misc.Unsafe类里面的compareAndSwapInt()和com-pareAndSwapLong()等几个方法包装提供，虚拟机在内部对这些方法做了特殊处理，即时编译出来的结果就是一条平台相关的处理器CAS指令，没有方法调用的过程，或者可以认为是无条件内联进去了。这种被虚拟机特殊处理的方法称为固有函数（Intrinsics），类似的固有函数还有Math.sin()等。<br>
+    CAS从语义上来说并不是完美的，存在这样的一个逻辑漏洞：如果一个变量V初次读取的时候是A值，并且在准备赋值的时候检查到它仍然为A值，那我们就能说它的值没有被其他线程改变过了吗？如果在这段期间它的值曾经被改成了B，后来又被改回为A，那CAS操作就会误认为它从来没有被改变过。这个漏洞称为CAS操作的“ABA”问题。通常情况下ABA问题很容易避免，或者就算出现了也不会引发什么问题。<br>
+    CAS可以模拟锁：</p>
+<pre><code class="language-java">volatile int state = 0;
+
+for(;;) {
+    if(casState(0, 1)) {
+        // do something
+        state = 0;
+    }
+}
+</code></pre>
+<p>    casState(0, 1)这一步，多线程同时执行时，只有一个线程能够执行成功。执行成功后，state值变为1，其他线程此时casState(0,1)肯定不会成功，所以执行成功分支实际上是单线程执行的。state变量起到了锁一样的作用，将state赋值为0，就是释放锁。和锁不同的是，未执行成功casState(0,1)的线程会不停的循环执行casState(0,1)直到成功为止，如果成功分支中逻辑较短，循环执行casState(0,1)不会等待较长时间，类似于锁自旋。实际上很多无锁的容器，都大量使用了CAS操作循环更新。<br>
+    CAS同样可以模拟可以等待的锁：</p>
+<pre><code class="language-java">class BlockLock implements Lock {
+    private AtomicInteger state = new AtomicInteger(0);
+
+    private ConcurrentLinkedQueue&lt;Thread&gt; waitList = new ConcurrentLinkedQueue&lt;&gt;();
+
+    @Override
+    public void lock() {
+        // 为了加速，进来就可以先比较一下
+        if (state.compareAndSet(0, 1))
+            return;
+
+        // 先把线程放到列表里，这样的话，有线程解锁就一定可以通知到本线程了。
+        waitList.add(Thread.currentThread());
+
+        for (;;) {
+            if (state.get() == 0) {
+                if (state.compareAndSet(0, 1)) {
+                    // 拿到锁了，就可以从队列中删除了
+                    waitList.remove(Thread.currentThread());
+                    return;
+                }
+            }
+            else {
+                LockSupport.park();
+            }
+        }
+    }
+
+    @Override
+    public void unlock() {
+        state.set(0);
+        Thread t = waitList.peek();
+
+        if (t != null)
+            LockSupport.unpark(t);
+    }
+}
+</code></pre>
+<p>    当CAS操作失败时，将线程加到队列中，然后调用LockSupport.park()，让线程处于等待状态即可。     state和waitList实际上表征的是一个状态，保证state.compareAndSet(0, 1)和waitList.add(Thread.currentThread())、LockSupport.park()是原子性的，要么设置成功，要么直接将线程添加进waitList并且park，中间不能有任何操作。但是CPU不停供这样的指令。更换一个思路，默认向waitList中添加线程，当state.compareAndSet(0, 1)成功时，删除waitList中的Thread。但是此方法还是无法保证LockSupport.park()的安全性，存在着unpark比park先执行的风险。这时可以用一个ThreadLocal去标记，unpark的时候标记一下，park的时候读取这个标记，如果有这个标记，那么就不park了。实际上LockSupport.park()和LockSupport.unpark()内部已经这样处理过了。<br>
+    state和waitList实际上表征的是一个状态，要让这些状态变化同步，需要密切关注state和waitList变化的地方。多线程情况下，会出现多种先后顺序，排查多线程问题时，需要将多种组合都考虑进去。<br>
+    多线程编程的思路，大致是1、使状态变化和执行顺序无关；2、让某些状态变化单线程执行</p>
 ]]></content>
     </entry>
     <entry>
